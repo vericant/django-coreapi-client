@@ -1,7 +1,6 @@
 SECRET_KEY = 'la-la-la'
 
 INSTALLED_APPS = [
-    'django_extensions',
     'django_coreapi_client',
 ]
 

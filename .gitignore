@@ -15,3 +15,8 @@ __pycache__
 .cache
 .tox
 .eggs
+.pytest_cache
+
+# local virtualenv and editor state
+.venv/
+.cursor/

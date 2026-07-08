@@ -2,7 +2,12 @@
 Django CoreAPI client
 #####################
 
-Wrapper around ``coreapi.Client`` for convenient usage in Django projects.
+A small requests-based RPC client for Django projects that talk to
+DRF services via a runtime-fetched schema.
+
+Since 2.0 the ``coreapi`` package is no longer used; the client fetches and
+parses the corejson schema itself and performs plain JSON HTTP calls with
+``requests``. The public interface is unchanged from 1.x.
 
 
 #####
@@ -38,6 +43,25 @@ Access API endpoints according to the schema, e.g.
    project = client.api.users.projects.read(id=7)
    new_project = client.api.users.projects.create(name='xxx', user_id=3)
 
-Et cetera.
+Responses are plain dicts (or lists). Server errors (4xx/5xx) raise
+``django_coreapi_client.exceptions.ErrorMessage``:
 
-Hope it's useful. 73!
+.. code-block:: python
+
+   from django_coreapi_client.exceptions import ErrorMessage
+
+   try:
+       client.api.users.projects.read(id=404)
+   except ErrorMessage as e:
+       print(e.error.title)   # '404 Not Found'
+       print(e.error.content) # decoded response body
+
+
+#######
+Testing
+#######
+
+.. code-block:: bash
+
+   pip install -e .[testing]
+   DJANGO_SETTINGS_MODULE=test_settings pytest

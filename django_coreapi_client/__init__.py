@@ -1,7 +1,9 @@
 from __future__ import unicode_literals, absolute_import
 
-import coreapi
 from django.conf import settings
+
+from . import exceptions  # noqa: F401  (public API: exceptions.ErrorMessage)
+from .transport import HTTPClient
 
 
 class Client(object):
@@ -16,12 +18,12 @@ class Client(object):
         client_settings = settings.COREAPI_CLIENT.get(name)
 
         if not auth:
-            auth = coreapi.auth.BasicAuthentication(
-                username=client_settings.get('AUTH_USERNAME'),
-                password=client_settings.get('AUTH_PASSWORD'),
+            auth = (
+                client_settings.get('AUTH_USERNAME'),
+                client_settings.get('AUTH_PASSWORD'),
             )
         if not client:
-            client = coreapi.Client(auth=auth)
+            client = HTTPClient(auth=auth)
         if not schema:
             schema = client.get(client_settings.get('SCHEMA_URL'))
 
