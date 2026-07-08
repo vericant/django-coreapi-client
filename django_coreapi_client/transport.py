@@ -5,11 +5,14 @@ parameter routing and error behavior.
 """
 from __future__ import unicode_literals, absolute_import
 
+import json
+
 import requests
 import uritemplate
 
-from .document import Document, loads_corejson
+from .document import Document, loads_corejson, parse_corejson
 from .exceptions import Error, ErrorMessage, ParameterError, ParseError
+from .openapi import parse_openapi
 
 SCHEMA_ACCEPT = 'application/coreapi+json, application/vnd.oai.openapi+json'
 
@@ -49,7 +52,23 @@ class HTTPClient(object):
         return self.parse_schema(response, base_url=url)
 
     def parse_schema(self, response, base_url=''):
-        return loads_corejson(response.text, base_url=base_url)
+        """
+        Auto-detect the schema flavor from the response content type
+        (falling back to sniffing the payload): corejson from DRF's legacy
+        coreapi generator, or an OpenAPI 3.x document (e.g. drf-spectacular).
+        """
+        content_type = response.headers.get('Content-Type', '')
+        if 'coreapi' in content_type:
+            return loads_corejson(response.text, base_url=base_url)
+        try:
+            data = json.loads(response.text)
+        except ValueError as exc:
+            raise ParseError(
+                'Schema response from {!r} is not JSON ({}). Content-Type: {!r}'
+                .format(base_url, exc, content_type))
+        if 'openapi' in content_type or 'openapi' in data:
+            return parse_openapi(data, base_url=base_url)
+        return parse_corejson(data, base_url=base_url)
 
     def action(self, document, keys, params=None):
         if not isinstance(document, Document):

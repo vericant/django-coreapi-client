@@ -6,8 +6,13 @@ A small requests-based RPC client for Django projects that talk to
 DRF services via a runtime-fetched schema.
 
 Since 2.0 the ``coreapi`` package is no longer used; the client fetches and
-parses the corejson schema itself and performs plain JSON HTTP calls with
+parses the schema itself and performs plain JSON HTTP calls with
 ``requests``. The public interface is unchanged from 1.x.
+
+Since 2.1 both schema flavors are supported and auto-detected from the
+schema response: corejson (DRF's legacy coreapi generator) and OpenAPI 3.x
+(e.g. drf-spectacular). OpenAPI paths are mapped onto the same key chains
+the coreapi generator produced, so call sites are identical either way.
 
 
 #####

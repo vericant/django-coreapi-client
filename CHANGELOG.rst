@@ -1,3 +1,17 @@
+2.1.0 (2026-07-08)
+------------------
+
+- Add an OpenAPI 3.x document parser alongside the corejson one. The
+  schema flavor is auto-detected from the response content type (with a
+  payload sniff fallback), so servers exposing drf-spectacular OpenAPI
+  documents (e.g. Vicki) and servers still exposing corejson (CAP,
+  Schools) work with the same client version.
+- OpenAPI paths map onto the same key chains DRF's legacy coreapi
+  generator produced (path segments + method-derived action names such
+  as ``list``/``read``/``create``/``partial_update``), so existing call
+  sites keep working unchanged.
+
+
 2.0.0 (2026-07-08)
 ------------------
 
