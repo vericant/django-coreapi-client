@@ -4,6 +4,32 @@ can migrate by swapping the import only.
 """
 from __future__ import unicode_literals, absolute_import
 
+import re
+
+#: Longest response body echoed into an ``ErrorMessage``. The message becomes
+#: the title of the caller's log entry (and of its Sentry issue), so a body
+#: beyond this is summarized rather than pasted in full.
+MAX_CONTENT_CHARS = 400
+
+_HTML_TITLE_RE = re.compile(r'<title[^>]*>(.*?)</title>', re.IGNORECASE | re.DOTALL)
+
+
+def summarize_content(content):
+    """Render a response body short enough to read in a log line.
+
+    An HTML error page is reduced to its ``<title>``, since its opening
+    hundreds of characters are a doctype and stylesheet links: nothing that
+    says what went wrong. Anything else is truncated.
+    """
+    text = content if isinstance(content, str) else f'{content}'
+    if '<html' in text[:1000].lower():
+        match = _HTML_TITLE_RE.search(text)
+        title = match.group(1).strip() if match else 'untitled'
+        return f'<html page, {len(text)} chars: {title}>'
+    if len(text) > MAX_CONTENT_CHARS:
+        return f'{text[:MAX_CONTENT_CHARS]}... [{len(text) - MAX_CONTENT_CHARS} more chars]'
+    return text
+
 
 class CoreAPIClientError(Exception):
     """Base class for all django-coreapi-client errors."""
@@ -38,7 +64,8 @@ class Error(object):
 
     def __str__(self):
         if self.content:
-            return '<Error: {}> {}'.format(self.title, self.content)
+            return '<Error: {}> {}'.format(
+                self.title, summarize_content(self.content))
         return '<Error: {}>'.format(self.title)
 
 

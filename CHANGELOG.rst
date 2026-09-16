@@ -1,3 +1,16 @@
+2.2.0 (2026-09-16)
+------------------
+
+- Summarize the response body in the ``ErrorMessage`` message instead of
+  pasting it in full. An HTML error page (a Django 500, an nginx 502) is
+  reduced to its ``<title>`` and a character count, and any other body
+  over 400 characters is truncated. Previously a whole error page became
+  the exception message, and so the title of the caller's log entry and
+  Sentry issue.
+- ``error.content`` still carries the undecorated body, so callers reading
+  ``error.get('detail')`` or the raw text are unaffected.
+
+
 2.1.0 (2026-07-08)
 ------------------
 

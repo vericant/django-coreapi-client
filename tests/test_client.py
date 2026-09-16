@@ -4,7 +4,7 @@ import json
 import pytest
 
 import django_coreapi_client
-from django_coreapi_client.exceptions import ErrorMessage, ParameterError
+from django_coreapi_client.exceptions import Error, ErrorMessage, ParameterError
 
 from .conftest import SCHEMA_URL
 
@@ -163,3 +163,40 @@ class TestClientSignature:
             'example_server', keys=['api'], auth=client._auth,
             client=client.client, schema=client.schema)
         assert clone.schema is client.schema
+
+
+class TestErrorMessageContent:
+
+    def test_json_body_is_kept_verbatim(self):
+        error = Error(title='500 Internal Server Error',
+                      content={'detail': 'Internal Server Error on CAP'})
+        assert str(error) == (
+            "<Error: 500 Internal Server Error> "
+            "{'detail': 'Internal Server Error on CAP'}")
+
+    def test_html_body_collapses_to_its_title(self):
+        error = Error(title='502 Bad Gateway',
+                      content='<html><head><title>502 Bad Gateway</title>'
+                              '</head><body>' + 'x' * 5000 + '</body></html>')
+        message = str(error)
+        assert '502 Bad Gateway' in message
+        assert '<body>' not in message
+        assert len(message) < 100
+
+    def test_long_plain_body_is_truncated(self):
+        error = Error(title='500 Internal Server Error', content='y' * 900)
+        message = str(error)
+        assert '500 more chars' in message
+        assert len(message) < 500
+
+    def test_full_body_stays_available_on_the_error(self, client,
+                                                    schema_response):
+        body = ('<html><head><title>CAP | System Error</title></head>'
+                '<body>' + 'z' * 3000 + '</body></html>')
+        schema_response.post('https://example.com/api/things/', status=500,
+                             body=body, content_type='text/html')
+        with pytest.raises(ErrorMessage) as exc_info:
+            client.api.things.create(name='x')
+        assert 'CAP | System Error' in str(exc_info.value)
+        assert 'zzz' not in str(exc_info.value)
+        assert exc_info.value.error.content == body
